@@ -1,0 +1,143 @@
+import org.opencv.core.*;
+import org.opencv.videoio.VideoCapture;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.entity.StringEntity;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+public class EdgeImpulseAutomationTest {
+    static {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+    }
+
+    // Mock products
+    static Map<String, Product> products = new HashMap<>();
+    static {
+        products.put("Hide and seek", new Product("1", 0.5, 0.5, 1));
+        products.put("50 50", new Product("2", 1, 1, 1));
+        products.put("Dove", new Product("3", 2, 2, 1));
+        products.put("Surf excel", new Product("4", 3, 3, 1));
+    }
+
+    public static void main(String[] args) {
+        // Check for command line arguments
+        if (args.length == 0) {
+            System.out.println("Please provide the model path.");
+            System.exit(1);
+        }
+
+        String modelPath = args[0];  // Assume model path is provided as the first argument
+
+        // Initialize and test model
+        try {
+            testModel(modelPath);
+        } catch (IOException e) {
+            System.err.println("Error while running model test: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public static void testModel(String modelPath) throws IOException {
+        // Replace with the code to load the model
+        System.out.println("Loaded model from: " + modelPath);
+
+        // Camera initialization (using OpenCV)
+        VideoCapture camera = new VideoCapture(0);  // 0 is the default camera
+        if (!camera.isOpened()) {
+            System.err.println("Cannot open the camera");
+            System.exit(1);
+        }
+
+        // Mocked classifier response (replace with real classifier logic)
+        for (int frameIdx = 0; frameIdx < 10; frameIdx++) {  // Mock loop for 10 frames
+            Mat frame = new Mat();
+            camera.read(frame);
+            if (frame.empty()) {
+                System.out.println("No frame captured.");
+                break;
+            }
+
+            // Simulate object detection (replace this with real inference logic)
+            String detectedLabel = "Hide and seek";  // Example label
+            double confidence = 0.9;  // Simulate detection confidence
+
+            System.out.println("Detected label: " + detectedLabel + ", Confidence: " + confidence);
+
+            // Post the result if confidence is high
+            if (confidence > 0.85) {
+                Product product = products.get(detectedLabel);
+                if (product != null) {
+                    sendPostRequest(product);
+                }
+            }
+
+            // Show frame (can be disabled in testing)
+            Imgproc.putText(frame, "Label: " + detectedLabel, new Point(50, 50),
+                    Core.FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 0, 0), 2);
+            Imgcodecs.imwrite("frame_" + frameIdx + ".jpg", frame);  // Save frame for testing
+        }
+
+        camera.release();
+    }
+
+    // Method to send HTTP POST request (for automation test or real post)
+    public static void sendPostRequest(Product product) throws IOException {
+        // Prepare the HTTP POST request
+        HttpPost post = new HttpPost("https://automaticbilling.herokuapp.com/product");
+        post.setHeader("Content-Type", "application/json");
+
+        String jsonPayload = String.format(
+                "{\"id\":\"%s\", \"name\":\"%s\", \"price\":%f, \"unit\":\"Nos\", \"taken\":%d, \"payable\":%f}",
+                product.productId, product.name, product.price, product.taken, product.finalRate);
+
+        post.setEntity(new StringEntity(jsonPayload));
+
+        // Execute the request
+        HttpEntity entity = HttpClients.createDefault().execute(post).getEntity();
+        String responseString = EntityUtils.toString(entity);
+        System.out.println("Response: " + responseString);
+    }
+
+    // Class to hold product information
+    static class Product {
+        String productId;
+        String name;
+        double price;
+        double finalRate;
+        int taken;
+
+        public Product(String productId, double price, double finalRate, int taken) {
+            this.productId = productId;
+            this.name = "Product " + productId;
+            this.price = price;
+            this.finalRate = finalRate;
+            this.taken = taken;
+        }
+    }
+}  import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+import java.io.IOException;
+
+public class EdgeImpulseAutomationTestTest {
+
+    @Test
+    public void testSendPostRequest() throws IOException {
+        // Mocking the Product
+        EdgeImpulseAutomationTest.Product product = new EdgeImpulseAutomationTest.Product("1", 0.5, 0.5, 1);
+       
+        // Mocking the HTTP request
+        HttpClient mockClient = mock(HttpClient.class);
+        when(mockClient.execute(any(HttpPost.class))).thenReturn(mock(HttpResponse.class));
+
+        // Call the method under test
+        EdgeImpulseAutomationTest.sendPostRequest(product);
+    }
+}
